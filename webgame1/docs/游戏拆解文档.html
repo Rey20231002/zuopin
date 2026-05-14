@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>莲池竞渡 - 游戏拆解文档</title>
+<style>
+  @media print { body { margin: 0; } .page-break { page-break-before: always; } }
+  body { font-family: "Noto Serif SC", SimSun, STSong, serif; max-width: 800px; margin: 40px auto; padding: 0 20px; color: #222; line-height: 1.8; background: #fff; }
+  h1 { text-align: center; font-size: 28px; border-bottom: 3px solid #c04040; padding-bottom: 12px; }
+  h2 { font-size: 20px; color: #c04040; margin-top: 32px; border-bottom: 1px solid #ddd; padding-bottom: 6px; }
+  h3 { font-size: 16px; color: #444; margin-top: 20px; }
+  table { border-collapse: collapse; width: 100%; margin: 12px 0; }
+  th, td { border: 1px solid #ccc; padding: 8px 12px; text-align: left; font-size: 14px; }
+  th { background: #f5f0e8; }
+  code { background: #f5f0e8; padding: 2px 6px; border-radius: 2px; font-size: 13px; }
+  pre { background: #f5f0e8; padding: 16px; border-radius: 4px; font-size: 12px; overflow-x: auto; line-height: 1.5; }
+  ul, ol { padding-left: 24px; }
+  strong { color: #c04040; }
+  .subtitle { text-align: center; color: #888; font-size: 14px; margin-top: -10px; }
+</style>
+</head>
+<body>
+
+<h1>莲池竞渡 — 游戏拆解文档</h1>
+<p class="subtitle">基于桌游《骆驼大赛》改编的网页游戏 | 2026年5月</p>
+
+<h2>一、游戏简介</h2>
+<p><strong>莲池竞渡</strong>是一款基于桌游《骆驼大赛》(Camel Up, 2014 Spiel des Jahres) 改编的浏览器网页游戏。主题从埃及沙漠赛骆驼改为盛唐江南水乡的灵龟赛跑。玩家扮演观赛宾客，通过下注和布局锦囊在不确定性中做出最优决策，最终铜钱最多者封号"莲池伯"。</p>
+<ul>
+<li><strong>平台</strong>：浏览器，纯前端，<code>file:///</code> 直接运行，零依赖</li>
+<li><strong>人数</strong>：单人 vs 4名AI，或热座2-6人</li>
+<li><strong>时长</strong>：约15-25分钟</li>
+<li><strong>技术栈</strong>：原生 HTML + CSS + JavaScript（Canvas渲染），无框架、无构建工具</li>
+</ul>
+
+<div class="page-break"></div>
+<h2>二、核心玩法拆解</h2>
+
+<h3>2.1 基础循环</h3>
+<pre>新一巡 → 玩家轮流行动 → 7支签抽完 → 验莲榜结算 → 下一巡 → ... → 龟至终点 → 揭榜</pre>
+<p>每一巡（回合）签筒内有7支签（6支普通色签+1支黑白逆行签）。玩家按铜钱数量排序轮流行动（铜钱少者先），直到所有签被抽出。</p>
+
+<h3>2.2 四种行动</h3>
+<table>
+<tr><th>行动</th><th>名称</th><th>收益模型</th><th>风险</th></tr>
+<tr><td>观莲下注</td><td>拿取回合押注券</td><td>押对第1名得5/3/2文，第2名1文</td><td>押错赔1文</td></tr>
+<tr><td>布囊设局</td><td>放置锦囊(+1/-1)</td><td>踩中即得1文，扭转赛道格局</td><td>每局仅1次，时机关键</td></tr>
+<tr><td>摇签问路</td><td>从签筒抽签</td><td>签筹换1文（稳定收入）</td><td>无直接风险</td></tr>
+<tr><td>一卦定局</td><td>全程竞猜鳌头/殿后</td><td>按预测顺序得8/5/3/2/1文</td><td>猜错赔1文</td></tr>
+</table>
+
+<h3>2.3 核心机制：叠罗汉</h3>
+<p>多只灵龟在同一格时形成叠罗汉。下方龟移动时驮着背上所有龟一起走。最上层龟视为最领先。这一机制创造了"搭顺风车"的戏剧性——被驮的龟无需自己的签被抽出就能前进。</p>
+
+<h3>2.4 逆转机制：锦囊+逆行龟</h3>
+<ul>
+<li><strong>锦囊</strong>：浮萍(+1) 让龟额外前进，漩涡(-1) 让龟后退到底部。领先龟踩中漩涡瞬间变垫底。</li>
+<li><strong>逆行龟</strong>（玄冥/素影）：从终点出发反向移动，推动遇到的普通龟向前。黑白共用1颗骰子，每轮仅一只移动。</li>
+</ul>
+<p>这三层系统（叠罗汉+锦囊+逆行龟）叠加产生高度不可预测的赛道变化，是游戏策略深度的核心来源。</p>
+
+<h3>2.5 策略深度分析</h3>
+<table>
+<tr><th>策略维度</th><th>说明</th></tr>
+<tr><td>信息不对称</td><td>先下注全程竞猜奖励高（8文）但信息少；后下注信息多但奖励递减</td></tr>
+<tr><td>行动节奏</td><td>铜钱少的玩家先行，越穷越需要靠策略翻盘</td></tr>
+<tr><td>空间博弈</td><td>锦囊放在领先龟前方可逆转格局，但可能误伤后来者</td></tr>
+<tr><td>概率估算</td><td>签筒中剩余签的颜色分布影响各龟前进概率</td></tr>
+<tr><td>对冲策略</td><td>同时押多个颜色分散风险</td></tr>
+</table>
+
+<div class="page-break"></div>
+<h2>三、技术架构拆解</h2>
+
+<h3>3.1 架构总览</h3>
+<pre>
+┌────────────────────────────────────────┐
+│              index.html                │
+│  ┌──────────────────────────────────┐  │
+│  │         Canvas (1100×700)        │  │
+│  │  trackRenderer / turtleRenderer  │  │
+│  │  roundInfo                       │  │
+│  └──────────────────────────────────┘  │
+│  playerBar │ actionPanel              │
+│  historyLog│ unactedPanel             │
+└────────────────────────────────────────┘
+</pre>
+
+<h3>3.2 数据流（单向）</h3>
+<pre>
+用户输入 → actionPanel.dispatch(type, payload)
+         → store.history 记录
+         → system handler 修改 store.state
+         → subscriber 通知 UI 更新
+</pre>
+
+<h3>3.3 状态管理</h3>
+<p>核心是 <code>src/store/store.js</code>（约100行），提供：</p>
+<ul>
+<li><strong>确定性PRNG</strong>：<code>store.prng.next(min, max)</code> 替代 Math.random()，支持存档回放</li>
+<li><strong>事件派发</strong>：<code>store.dispatch(type, payload)</code></li>
+<li><strong>切片订阅</strong>：<code>store.subscribeTo('player.hp', callback)</code> 精确到状态路径</li>
+<li><strong>历史记录</strong>：<code>store.history</code> 记录所有离散事件，组合 seed 即可完整回放</li>
+</ul>
+
+<h3>3.4 状态切片</h3>
+<table>
+<tr><th>切片</th><th>文件</th><th>内容</th></tr>
+<tr><td><code>state.race</code></td><td>raceSystem.js</td><td>8龟位置、叠罗汉、终点记录</td></tr>
+<tr><td><code>state.round</code></td><td>roundSystem.js</td><td>巡编号、签筒状态、行动顺序</td></tr>
+<tr><td><code>state.players</code></td><td>playerSystem.js</td><td>玩家数据、铜钱、锦囊状态</td></tr>
+<tr><td><code>state.bets</code></td><td>betSystem.js</td><td>回合押注、全程竞猜记录</td></tr>
+<tr><td><code>state.pouches</code></td><td>pouchSystem.js</td><td>锦囊位置和类型</td></tr>
+<tr><td><code>state.log</code></td><td>logSystem.js</td><td>人类可读的行为日志</td></tr>
+<tr><td><code>state.ai</code></td><td>aiSystem.js</td><td>AI思考状态标记</td></tr>
+</table>
+
+<h3>3.5 文件结构（21个文件）</h3>
+<pre>
+src/
+├── index.html              # 入口 + 全局CSS
+├── main.js                 # 游戏循环、状态机、系统编排
+├── store/store.js          # 状态引擎（不可修改）
+├── config/
+│   ├── units.js            # 8龟数据
+│   ├── balance.js          # 平衡参数
+│   └── strings.js          # UI文案
+├── systems/
+│   ├── raceSystem.js       # 移动、叠罗汉、排名
+│   ├── roundSystem.js      # 回合管理
+│   ├── playerSystem.js     # 玩家管理
+│   ├── betSystem.js        # 下注结算
+│   ├── pouchSystem.js      # 锦囊系统
+│   ├── logSystem.js        # 行为日志
+│   └── aiSystem.js         # AI决策
+├── ui/
+│   ├── startScreen.js      # 开始页面
+│   ├── trackRenderer.js    # Canvas赛道
+│   ├── turtleRenderer.js   # Canvas灵龟
+│   ├── actionPanel.js      # 行动按钮
+│   ├── playerBar.js        # 铜钱栏
+│   ├── roundInfo.js        # 回合信息
+│   ├── settlementOverlay.js # 结算弹窗
+│   ├── historyLog.js       # 历史记录面板
+│   └── unactedPanel.js     # 未行动龟面板
+└── tests/                  # 测试套件（42项）
+</pre>
+
+<h3>3.6 关键架构约束</h3>
+<ol>
+<li><strong>file:/// 兼容</strong>：无 ES modules、无打包工具、无外部依赖</li>
+<li><strong>IIFE + window 全局导出</strong>：每个 JS 文件自执行函数</li>
+<li><strong>纯状态</strong>：store.state 仅含可序列化数据（无DOM引用、无类实例）</li>
+<li><strong>Config vs State 分离</strong>：静态数值在 config/，动态值在 store.state</li>
+<li><strong>确定性</strong>：Math.random() 禁用，全部走 store.prng.next()</li>
+</ol>
+
+<div class="page-break"></div>
+<h2>四、AI系统拆解</h2>
+
+<h3>4.1 决策优先级</h3>
+<pre>
+1. 持有锦囊 → 找关键格投放（搅局型权重高）
+2. 领先龟明确 → 拿该色回合押注券
+3. 赛程过半 → 下注全程竞猜（激进型更早）
+4. 兜底 → 抽签（稳定收入）
+5. 无选择 → 跳过回合
+</pre>
+
+<h3>4.2 三种性格</h3>
+<table>
+<tr><th>性格</th><th>锦囊倾向</th><th>全程竞猜倾向</th><th>角色</th></tr>
+<tr><td>保守型</td><td>20%</td><td>10%</td><td>张员外、钱掌柜</td></tr>
+<tr><td>激进型</td><td>10%</td><td>40%</td><td>李书生</td></tr>
+<tr><td>搅局型</td><td>50%</td><td>20%</td><td>赵镖头</td></tr>
+</table>
+
+<h3>4.3 防冻结机制</h3>
+<ul>
+<li>阶段检查：定时器回调验证 phase === 'player_turn'</li>
+<li>try-catch 兜底：任何异常不阻止 _thinking 复位</li>
+<li>结算/结束时强制 _thinking = false</li>
+</ul>
+
+<h2>五、视觉设计拆解</h2>
+
+<table>
+<tr><th>用途</th><th>颜色</th><th>色值</th></tr>
+<tr><td>背景底</td><td>宣纸渐变</td><td>#f6f2ea → #e4dac8</td></tr>
+<tr><td>主文字</td><td>墨色</td><td>#1a1010</td></tr>
+<tr><td>强调色</td><td>朱砂红</td><td>#c04040</td></tr>
+<tr><td>池水</td><td>淡绿</td><td>#d4e8d0 → #b8cfa8</td></tr>
+<tr><td>铜钱</td><td>金色</td><td>#b48c32</td></tr>
+</table>
+
+<h2>六、测试体系</h2>
+<table>
+<tr><th>测试文件</th><th>覆盖内容</th><th>用例数</th></tr>
+<tr><td>test-race.js</td><td>移动、叠罗汉、锦囊触发、逆行龟、终点检测</td><td>8</td></tr>
+<tr><td>test-bet.js</td><td>回合押注、全程竞猜、押错扣钱</td><td>4</td></tr>
+<tr><td>test-round.js</td><td>签筒生成、回合切换、押注券管理</td><td>4</td></tr>
+<tr><td>test-determinism.js</td><td>PRNG确定性、seed回放一致性</td><td>3</td></tr>
+</table>
+<p>运行方式：<code>node -e "..."</code> 或打开 <code>tests/index.html</code>。</p>
+
+</body>
+</html>
