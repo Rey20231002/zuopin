@@ -114,6 +114,9 @@
 
         var s = store.state
 
+        // 游戏未激活时跳过状态机
+        if (!gameConfig) { requestAnimationFrame(gameLoop); return }
+
         // 处理回合结算（在渲染前）
         if (s.round.phase === 'settle' && !settlePending) {
             // 强制清除AI思考状态，防止卡死
