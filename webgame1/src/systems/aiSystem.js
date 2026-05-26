@@ -159,7 +159,7 @@
 
                 // 检查终点
                 if (raceSystem.hasFinished(state)) {
-                    state.round.phase = 'settle'
+                    state.round.phase = 'game_over'
                 }
 
                 store.dispatch('NEXT_PLAYER', {})
