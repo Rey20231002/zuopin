@@ -116,23 +116,24 @@
                 overFinish = false
             }
 
-            // 放入目标格，叠在已有龟上面
-            for (var m = 0; m < movingTurtles.length; m++) {
-                cells[targetCell].push(movingTurtles[m])
+            // 放入目标格
+            if (forward) {
+                // 正向：叠在已有龟上面
+                for (var m = 0; m < movingTurtles.length; m++) {
+                    cells[targetCell].push(movingTurtles[m])
+                }
+            } else {
+                // 逆行：插入到目标格最下方（逆行龟从终点方向来，落后于原有龟）
+                cells[targetCell] = movingTurtles.concat(cells[targetCell])
             }
 
-            // 记录过终点的龟
+            // 记录过终点的龟（仅正向）
             if (overFinish) {
                 for (var f = 0; f < movingTurtles.length; f++) {
                     if (state.race.finishedOrder.indexOf(movingTurtles[f]) === -1) {
                         state.race.finishedOrder.push(movingTurtles[f])
                     }
                 }
-            }
-
-            // 逆行龟相遇：把目标格的普通龟推向前1步
-            if (!forward) {
-                this._pushForward(state, targetCell, movingTurtles)
             }
 
             // 锦囊检查
@@ -160,37 +161,6 @@
                 steps: steps,
                 movingTurtles: movingTurtles.slice(),
                 forward: forward
-            }
-        },
-
-        // 逆行龟推动前方普通龟
-        _pushForward: function(state, cell, excludeIds) {
-            var cells = state.race.cells
-            var toPush = []
-            var stack = cells[cell]
-
-            // 找出该格中不是逆行龟的龟（普通龟）
-            for (var i = 0; i < stack.length; i++) {
-                var tid = stack[i]
-                var isSpecial = false
-                for (var s = 0; s < config.specialTurtles.length; s++) {
-                    if (config.specialTurtles[s].id === tid) { isSpecial = true; break }
-                }
-                if (!isSpecial) {
-                    toPush.push({ id: tid, idx: i })
-                }
-            }
-
-            // 将普通龟推向前1格（从栈顶往下，逐个推进）
-            for (var p = toPush.length - 1; p >= 0; p--) {
-                var item = toPush[p]
-                var idxInStack = cells[cell].indexOf(item.id)
-                if (idxInStack === -1) continue
-                var pushed = cells[cell].splice(idxInStack, 1)
-                var nextCell = Math.min(cell + 1, state.race.trackLength - 1)
-                for (var m = 0; m < pushed.length; m++) {
-                    cells[nextCell].push(pushed[m])
-                }
             }
         },
 

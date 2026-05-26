@@ -416,8 +416,14 @@
             }
             if (this.buttons.drawSign) {
                 this.buttons.drawSign.disabled = !isHumanTurn || signs.length === 0
-                // 显示当前令牌持有量
-                var tokens = state.round.signTicketsHeld[playerIdx] || 0
+                // 查找人类玩家，始终显示人类玩家的令牌持有量
+                var humanIdx = playerIdx
+                if (!player.isHuman) {
+                    for (var hi = 0; hi < state.players.length; hi++) {
+                        if (state.players[hi].isHuman) { humanIdx = hi; break }
+                    }
+                }
+                var tokens = state.round.signTicketsHeld[humanIdx] || 0
                 this.buttons.drawSign.textContent = tokens > 0
                     ? config.strings.actionDrawSign + ' (令牌×' + tokens + ')'
                     : config.strings.actionDrawSign
