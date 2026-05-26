@@ -192,31 +192,45 @@
         _logCoinChanges: function(state, before, roundNum) {
             if (!state.log) return
             var players = state.players
-            var totalEntries = []
+            var st = state.round.signTicketsHeld
+
+            // 分别收集令牌收益和下注收益
+            var tokenEntries = []
+            var betEntries = []
             for (var i = 0; i < players.length; i++) {
                 var oldCoins = 0
                 for (var b = 0; b < before.length; b++) {
                     if (before[b].id === players[i].id) { oldCoins = before[b].coins; break }
                 }
-                var delta = players[i].coins - oldCoins
-                if (delta !== 0) {
-                    var sign = delta > 0 ? '+' : ''
-                    totalEntries.push(players[i].name + ' ' + sign + delta + '文')
+                var tokenGain = (st[String(i)] || 0) * config.balance.signTicketReward
+                var betDelta = (players[i].coins - oldCoins) - tokenGain
+
+                if (tokenGain > 0) {
+                    tokenEntries.push(players[i].name + ' +' + tokenGain + '文')
+                }
+                if (betDelta !== 0) {
+                    var sign = betDelta > 0 ? '+' : ''
+                    betEntries.push(players[i].name + ' ' + sign + betDelta + '文')
                 }
             }
-            if (totalEntries.length > 0) {
+
+            if (betEntries.length > 0) {
                 state.log.push({
-                    round: roundNum,
-                    playerName: '结算',
-                    action: '铜钱变化: ' + totalEntries.join('，'),
-                    detail: '',
-                    isDivider: false,
-                    isCoinLog: true
+                    round: roundNum, playerName: '结算',
+                    action: '下注: ' + betEntries.join('，'),
+                    detail: '', isDivider: false, isCoinLog: true
                 })
-            } else {
+            }
+            if (tokenEntries.length > 0) {
                 state.log.push({
-                    round: roundNum,
-                    playerName: '结算',
+                    round: roundNum, playerName: '结算',
+                    action: '令牌: ' + tokenEntries.join('，'),
+                    detail: '', isDivider: false, isCoinLog: true
+                })
+            }
+            if (betEntries.length === 0 && tokenEntries.length === 0) {
+                state.log.push({
+                    round: roundNum, playerName: '结算',
                     action: '铜钱变化: 无人变动',
                     detail: '',
                     isDivider: false,

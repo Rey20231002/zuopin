@@ -416,6 +416,11 @@
             }
             if (this.buttons.drawSign) {
                 this.buttons.drawSign.disabled = !isHumanTurn || signs.length === 0
+                // 显示当前令牌持有量
+                var tokens = state.round.signTicketsHeld[playerIdx] || 0
+                this.buttons.drawSign.textContent = tokens > 0
+                    ? config.strings.actionDrawSign + ' (令牌×' + tokens + ')'
+                    : config.strings.actionDrawSign
             }
             if (this.buttons.finalFirst) {
                 this.buttons.finalFirst.disabled = !isHumanTurn

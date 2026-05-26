@@ -84,6 +84,18 @@
             ctx.textAlign = 'left'
             ctx.fillText(config.strings.signsRemain + ': ' + signsRemaining.length + ' 支', remainX, infoY + 28)
 
+            // 当前玩家令牌数
+            if (round.phase === 'player_turn') {
+                var cpIdx = round.currentPlayerIndex
+                var tokens = round.signTicketsHeld[cpIdx] || 0
+                var tokenText = '令牌: ' + tokens
+                var tokenW = ctx.measureText(tokenText).width
+                ctx.fillStyle = '#b48c32'
+                ctx.font = 'bold 14px KaiTi, STKaiti, "Microsoft YaHei", sans-serif'
+                ctx.textAlign = 'right'
+                ctx.fillText(tokenText, w - 24, infoY + 28)
+            }
+
             // 回合阶段提示
             if (round.phase === 'settle') {
                 ctx.fillStyle = '#c04040'

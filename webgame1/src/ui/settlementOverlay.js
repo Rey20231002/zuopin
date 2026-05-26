@@ -18,7 +18,33 @@
             var ranking = raceSystem.getRanking(state)
             var players = state.players
 
+            // 快照：结算前的铜钱和令牌
+            var coinsBefore = []
+            var tokensBefore = {}
+            for (var p = 0; p < players.length; p++) {
+                coinsBefore.push({ id: players[p].id, name: players[p].name, coins: players[p].coins })
+            }
+            var st = state.round.signTicketsHeld
+            for (var key in st) {
+                if (st.hasOwnProperty(key)) tokensBefore[key] = st[key]
+            }
+
             store.dispatch('SETTLE_ROUND', {})
+
+            // 计算每人令牌收益和下注收益
+            var tokenEarnings = {}  // { playerId: coinAmount }
+            var betEarnings = {}    // { playerId: coinAmount }
+            for (var k = 0; k < players.length; k++) {
+                var pid = players[k].id
+                var oldC = 0
+                for (var cb = 0; cb < coinsBefore.length; cb++) {
+                    if (coinsBefore[cb].id === pid) { oldC = coinsBefore[cb].coins; break }
+                }
+                var totalDelta = players[k].coins - oldC
+                var tokenGain = (tokensBefore[String(k)] || 0) * config.balance.signTicketReward
+                tokenEarnings[pid] = tokenGain
+                betEarnings[pid] = totalDelta - tokenGain
+            }
 
             var c = self._makeOverlay(config.strings.settleRoundTitle)
             var box = c.box
@@ -27,7 +53,7 @@
             var rankDiv = el('div', [
                 'font-size:22px;color:#1a1010;text-align:center;',
                 'font-family:"GameKai",KaiTi,STKaiti,"Microsoft YaHei",sans-serif;',
-                'letter-spacing:4px;margin-bottom:22px;line-height:2.4;'
+                'letter-spacing:4px;margin-bottom:16px;line-height:2.2;'
             ])
             var rankNames = ['一甲', '二甲', '三甲', '四甲', '五甲']
             for (var r = 0; r < Math.min(ranking.length, 5); r++) {
@@ -44,15 +70,64 @@
             box.appendChild(rankDiv)
 
             // 分隔线
-            box.appendChild(el('div', 'width:60%;height:1px;background:#a09080;margin:0 auto 20px auto;'))
+            box.appendChild(el('div', 'width:60%;height:1px;background:#a09080;margin:0 auto 14px auto;'))
 
-            // 玩家铜钱
+            // 下注收益
+            var betTitle = el('div', 'font-size:14px;color:#8b7355;text-align:center;margin-bottom:6px;')
+            betTitle.textContent = '—— 下注盈亏 ——'
+            box.appendChild(betTitle)
+            var betDiv = el('div', 'font-size:16px;color:#3d3228;text-align:center;line-height:2;')
+            for (var bi = 0; bi < players.length; bi++) {
+                var bp = players[bi]
+                var be = betEarnings[bp.id] || 0
+                if (be !== 0) {
+                    var bl = el('div')
+                    var sign = be > 0 ? '+' : ''
+                    var bColor = be > 0 ? '#3a6b3a' : '#c04040'
+                    bl.innerHTML = bp.name + ': <span style="color:' + bColor + ';font-weight:bold;">' + sign + be + '文</span>'
+                    betDiv.appendChild(bl)
+                }
+            }
+            if (betDiv.children.length === 0) {
+                betDiv.appendChild(el('div', 'font-size:14px;color:#a09080;')).textContent = '无变动'
+            }
+            box.appendChild(betDiv)
+
+            // 令牌收益
+            var tokenTitle = el('div', 'font-size:14px;color:#8b7355;text-align:center;margin-top:10px;margin-bottom:6px;')
+            tokenTitle.textContent = '—— 摇签收益（令牌兑钱） ——'
+            box.appendChild(tokenTitle)
+            var tokenDiv = el('div', 'font-size:16px;color:#3d3228;text-align:center;line-height:2;')
+            var anyToken = false
+            for (var ti = 0; ti < players.length; ti++) {
+                var tp = players[ti]
+                var te = tokenEarnings[tp.id] || 0
+                var tc = tokensBefore[String(ti)] || 0
+                if (tc > 0) {
+                    anyToken = true
+                    var tl = el('div')
+                    tl.innerHTML = tp.name + ': <span style="color:#b48c32;font-weight:bold;">抽签' + tc + '次 +' + te + '文</span>'
+                    tokenDiv.appendChild(tl)
+                }
+            }
+            if (!anyToken) {
+                var ne = el('div')
+                ne.textContent = '本巡无人抽签'
+                ne.style.cssText = 'font-size:14px;color:#a09080;'
+                tokenDiv.appendChild(ne)
+            }
+            box.appendChild(tokenDiv)
+
+            // 分隔线
+            box.appendChild(el('div', 'width:60%;height:1px;background:#a09080;margin:10px auto 14px auto;'))
+
+            // 玩家铜钱总结
             var coinDiv = el('div', 'font-size:18px;color:#1a1010;text-align:center;line-height:2.2;font-weight:bold;letter-spacing:2px;')
-            for (var p = 0; p < players.length; p++) {
-                var pl = players[p]
-                var sp = el('div')
-                sp.textContent = pl.name + ': ' + pl.coins + ' 文'
-                coinDiv.appendChild(sp)
+            for (var cp = 0; cp < players.length; cp++) {
+                var cpl = players[cp]
+                var csp = el('div')
+                csp.textContent = cpl.name + ': ' + cpl.coins + ' 文'
+                coinDiv.appendChild(csp)
             }
             box.appendChild(coinDiv)
 
