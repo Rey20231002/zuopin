@@ -124,11 +124,10 @@
         }
 
         // 检查游戏结束
-        if (raceSystem.hasFinished(s) && s.round.phase !== 'game_over' && !finalPending) {
+        if (s.round.phase === 'game_over' && !finalPending) {
             finalPending = true
             store.state.ai._thinking = false
             actionPanel._clearOverlay()
-            s.round.phase = 'game_over'
             setTimeout(function() {
                 settlementOverlay.showFinalReveal(store.state, function() {
                     resetGame()
