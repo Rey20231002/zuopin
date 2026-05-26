@@ -91,10 +91,14 @@
                 }
             }
 
-            // 3. 全程竞猜（激进型更早更频繁）
-            var totalTurns = balance.trackLength * 2  // 粗略估计总回合数
-            var progress = round.number / Math.max(totalTurns / 5, 1)
-            if (progress > 0.4 && rand < aggressiveChance) {
+            // 3. 全程竞猜（从第2巡开始，越后越频繁）
+            var leaderCell = 0
+            for (var lc = state.race.cells.length - 1; lc >= 0; lc--) {
+                if (state.race.cells[lc].length > 0) { leaderCell = lc; break }
+            }
+            var raceProgress = leaderCell / state.race.trackLength  // 0~1
+            var finalBetChance = aggressiveChance + raceProgress * 0.3  // 基础+赛道进度加成
+            if (round.number >= 2 && rand < finalBetChance) {
                 var betType = store.prng.next(0, 1) === 0 ? 'first' : 'last'
                 var candidateTurtles = ranking.map(function(r) { return r.turtleId })
                 if (betType === 'first') {
